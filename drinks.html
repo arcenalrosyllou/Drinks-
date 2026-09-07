@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rosy's Drink Shop - Self-Ordering Kiosk</title>
+    <style>
+        :root {
+            --primary: #FF6B8B;
+            --primary-dark: #FF406C;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --dark: #2C3E50;
+            --light: #F7F9FC;
+            --card-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            --radius: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Fredoka', 'Segoe UI', Roboto, -apple-system, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #FFF6F8 0%, #E8F7F5 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* HEADER */
+        header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: var(--radius);
+            box-shadow: var(--card-shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border: 4px solid #FFEDF0;
+        }
+
+        .title-container h1 {
+            color: var(--primary);
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .title-container p {
+            color: var(--secondary);
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-size: 1rem;
+            margin-top: 2px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-home { background: #E0E6ED; color: var(--dark); }
+        .btn-challenge { background: var(--accent); color: #8A6D00; }
+        .btn-cart-clear { background: #FFE0E0; color: #D32F2F; padding: 8px 15px; font-size: 0.9rem; }
+        .btn-checkout { background: #4CAF50; color: white; width: 100%; justify-content: center; font-size: 1.4rem; padding: 15px; margin-top: 15px; }
+
+        /* MAIN KIOSK LAYOUT */
+        .kiosk-grid {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 25px;
+        }
+
+        @media (max-width: 1024px) {
+            .kiosk-grid { grid-template-columns: 1fr; }
+        }
+
+        /* MENU GRID */
+        .menu-section {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 20px;
+            border-radius: var(--radius);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .drink-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 15px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            border: 3px solid transparent;
+        }
+
+        .drink-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--secondary);
+        }
+
+        .drink-card.added-anim {
+            animation: bounce 0.4s ease;
+            border-color: #4CAF50;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .img-container {
+            width: 100%;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F9F9F9;
+            border-radius: 15px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .drink-img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+
+        .emoji-fallback {
+            font-size: 4rem;
+            display: none;
+        }
+
+        .drink-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .drink-name {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .speaker-btn {
+            background: #EBF3FF;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+
+        .speaker-btn:hover { background: #D0E2FF; }
+
+        .drink-price {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        .btn-add {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn-add:hover { background: #3dbbb3; }
+
+        .toast-added {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(76, 175, 80, 0.95);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: none;
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* SIDE PANEL (CART & PRACTICE) */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .cart-card, .esl-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px dashed #EEE;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .cart-header h2 { font-size: 1.4rem; color: var(--dark); }
+
+        .cart-items {
+            max-height: 240px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #F8F9FA;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        .cart-item-info { flex: 1; }
+        .cart-item-title { font-weight: 700; font-size: 1rem; }
+        .cart-item-price { font-size: 0.85rem; color: #666; }
+
+        .cart-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-qty {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: #DDD;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-del {
+            background: #FFD2D2;
+            color: #D32F2F;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .cart-total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.4rem;
+            font-weight: 800;
+            border-top: 2px solid #EEE;
+            padding-top: 12px;
+            color: var(--primary);
+        }
+
+        /* ESL PRACTICE CARD */
+        .esl-card {
+            border: 3px solid #E8F4FF;
+            background: #F4F9FF;
+        }
+
+        .esl-card h3 {
+            font-size: 1.1rem;
+            color: #2B6CB0;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sentence-box {
+            background: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #E2E8F0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* CHALLENGES OVERLAY/SCREEN */
+        #challenge-screen, #checkout-screen {
+            display: none;
+            background: white;
+            border-radius: var(--radius);
+            padding: 30px;
+            box-shadow: var(--card-shadow);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .challenge-box {
+            background: #FFF9E6;
+            border: 3px dashed #FFE066;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .challenge-box h2 { color: #B7791F; margin-bottom: 8px; }
+        .challenge-box p { font-size: 1.3rem; font-weight: 700; color: #744210; }
+
+        .status-msg {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            min-height: 45px;
+            margin: 15px 0;
+        }
+
+        .status-msg.success { color: #38A169; animation: pop 0.3s ease; }
+        .status-msg.error { color: #E53E3E; animation: shake 0.3s ease; }
+
+        @keyframes pop { 0% { transform: scale(0.8); } 100% { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+
+        /* PREPARATION ANIMATION */
+        .prep-animation-container {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .cup-wrapper {
+            position: relative;
+            width: 120px;
+            height: 160px;
+            margin: 20px auto;
+            border: 6px solid var(--dark);
+            border-top: none;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            overflow: hidden;
+            background: #FFF;
+        }
+
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: #FF80BF;
+            transition: height 2.5s ease-in-out;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255,255,255,0.6);
+            border-radius: 50%;
+            animation: rise 1.5s infinite ease-in;
+            opacity: 0;
+        }
+
+        @keyframes rise {
+            0% { bottom: 0; opacity: 1; transform: scale(0.5); }
+            100% { bottom: 100%; opacity: 0; transform: scale(1.2); }
+        }
+
+        .sparkles {
+            font-size: 2rem;
+            display: none;
+            animation: spin 1s infinite linear;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="title-container">
+            <h1>ROSY'S DRINK SHOP 🥤</h1>
+            <p>SELF-ORDERING KIOSK</p>
+        </div>
+        <div class="nav-buttons">
+            <button class="btn btn-home" onclick="showHomeScreen()">🏠 HOME</button>
+            <button class="btn btn-challenge" onclick="startChallengeMode()">🎯 CHALLENGE MODE</button>
+        </div>
+    </header>
+
+    <div id="shop-screen" class="kiosk-grid">
+        <div class="menu-section">
+            <div class="menu-grid" id="menu-container"></div>
+        </div>
+
+        <div class="side-panel">
+            <div class="cart-card">
+                <div class="cart-header">
+                    <h2>🛒 YOUR ORDER</h2>
+                    <button class="btn btn-cart-clear" onclick="clearCart()">CLEAR ORDER</button>
+                </div>
+                <div class="cart-items" id="cart-items"></div>
+                <div class="cart-total-row">
+                    <span>TOTAL:</span>
+                    <span id="cart-total">NT$0</span>
+                </div>
+                <button class="btn btn-checkout" onclick="checkout()">💳 CHECKOUT</button>
+            </div>
+
+            <div class="esl-card">
+                <h3>🗣️ What would you like?</h3>
+                <div class="sentence-box">
+                    <span id="practice-want">"I'd like a drink, please."</span>
+                    <button class="speaker-btn" onclick="speakText(document.getElementById('practice-want').innerText)">🔊</button>
+                </div>
+
+                <h3 style="margin-top: 15px;">💰 How much is it?</h3>
+                <div class="sentence-box">
+                    <span id="practice-price">"It's NT$0."</span>
+                    <button class="speaker-btn" onclick="speakText(document.getElementById('practice-price').innerText)">🔊</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="challenge-screen">
+        <div class="challenge-box">
+            <h2 id="challenge-title">Challenge 1</h2>
+            <p id="challenge-desc">Loading...</p>
+        </div>
+
+        <div id="challenge-menu" class="menu-grid" style="margin-bottom: 20px;"></div>
+
+        <div class="status-msg" id="challenge-status"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #F8F9FA; padding: 15px; border-radius: 12px;">
+            <div style="font-size: 1.2rem; font-weight: bold;">
+                Selected: <span id="challenge-selected-count">0</span> drinks | Total: <span id="challenge-total">NT$0</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-cart-clear" onclick="resetChallengeSelection()">Reset Choice</button>
+                <button class="btn" id="next-challenge-btn" style="background: #4CAF50; color: white; display: none;" onclick="nextChallenge()">NEXT CHALLENGE →</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="checkout-screen">
+        <div style="text-align: center; max-width: 500px; margin: 0 auto;">
+            <h2 style="color: var(--primary); font-size: 2rem;">ROSY'S DRINK SHOP 🥤</h2>
+            <p style="font-weight: bold; color: #666; margin-bottom: 20px;">ORDER RECEIPT</p>
+            
+            <div id="receipt-summary" style="background: #F9F9F9; padding: 20px; border-radius: 12px; text-align: left; margin-bottom: 20px;"></div>
+
+            <div class="prep-animation-container" id="prep-container">
+                <h3 id="prep-status-text" style="color: var(--secondary);">🥤 Your drink is being prepared!</h3>
+                <div class="cup-wrapper">
+                    <div class="liquid" id="cup-liquid"></div>
+                    <div class="bubble" style="left: 20%; width: 12px; height: 12px; animation-delay: 0.2s;"></div>
+                    <div class="bubble" style="left: 50%; width: 16px; height: 16px; animation-delay: 0.5s;"></div>
+                    <div class="bubble" style="left: 70%; width: 10px; height: 10px; animation-delay: 0.8s;"></div>
+                </div>
+                <div class="sparkles" id="sparkles">✨ 🎉 ✨</div>
+            </div>
+
+            <button class="btn btn-checkout" id="new-order-btn" style="display: none;" onclick="showHomeScreen()">🔄 NEW ORDER</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // DRINK DATA
+    const drinks = [
+        { id: 'milkshake', name: 'Milkshake', price: 60, emoji: '🥤', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSNmJnGCHvIjYRMy0g201DmnkF2gi7A13_rcOvwNAflwgh5EiDjfwb_LdH&s=10' },
+        { id: 'smoothie', name: 'Smoothie', price: 60, emoji: '🍓', img: 'https://thumbs.dreamstime.com/b/strawberry-smoothie-breakfast-food-element-isolated-icon-simple-realistic-flat-vector-colorful-drawing-white-background-78913254.jpg' },
+        { id: 'juice', name: 'Juice', price: 40, emoji: '🧃', img: 'https://classroomclipart.com/image/static7/preview2/strawberry-and-blueberry-smoothie-59061.jpg' },
+        { id: 'lemonade', name: 'Lemonade', price: 40, emoji: '🍋', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8_f-8qefavlcLPTtMqN98DEV07bJQFGuQ_YYSPtLTqA&s=10' },
+        { id: 'coffee', name: 'Coffee', price: 45, emoji: '☕', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ_WX8Yj0fGdUj-L_8x9FbKPum8bImEWmUEBnOqHrEagQ&s=10' },
+        { id: 'hotchocolate', name: 'Hot Chocolate', price: 50, emoji: '☕', img: 'https://static.vecteezy.com/system/resources/previews/026/703/862/non_2x/a-cup-of-hot-cocoa-with-marshmallows-illustration-vector.jpg' },
+        { id: 'soymilk', name: 'Soy Milk', price: 35, emoji: '🥛', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRO6CFQhP1xLQsTKeAufd2UOLIJDy8U4A0TK7umNWx5SwXvvtr1UJ4uj8d4&s=10' },
+        { id: 'milk', name: 'Milk', price: 30, emoji: '🥛', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQaif-op3q1m4sMH5MTIj-KnPSntOIOBku639Mv8MBdFy3svSLvy1y-23rL&s=10' },
+        { id: 'bubbletea', name: 'Bubble Tea', price: 60, emoji: '🧋', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLABBCMSgQ5TMJ562PIib59zziODM9KxkGl7jwVEwZiQ&s=10' },
+        { id: 'tea', name: 'Tea', price: 30, emoji: '🍵', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSuHoK2g-sOsjyaAHFjXAy6NPTG0clK8Pg5Nu15LL4hnYsB9cJJpCPWpgg&s=10' },
+        { id: 'cola', name: 'Cola', price: 30, emoji: '🥤', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRD-Xz-RvXB9ef8PBV7fBTwAYHn8VqoxhhxDXLCNa0emm6AV1KxCoshQhuq&s=10' },
+        { id: 'soda', name: 'Soda', price: 35, emoji: '🥤', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaQ9NiUeGVoYUcLIFZrz3IE71Gn1ksVjI4NcuQnZKi0w&s=10' }
+    ];
+
+    // STATE VARIABLES
+    let cart = [];
+    let currentChallengeIdx = 0;
+    let challengeCart = [];
+
+    const challenges = [
+        { id: 1, title: "Challenge 1", desc: "You have NT$100. Choose ONE drink.", check: (items) => items.length === 1 && getTotal(items) <= 100 },
+        { id: 2, title: "Challenge 2", desc: "You have NT$100. Choose TWO drinks.", check: (items) => items.reduce((a,b)=>a+b.qty,0) === 2 && getTotal(items) <= 100 },
+        { id: 3, title: "Challenge 3", desc: "You have NT$150. Choose THREE drinks.", check: (items) => items.reduce((a,b)=>a+b.qty,0) === 3 && getTotal(items) <= 150 },
+        { id: 4, title: "Challenge 4", desc: "Choose a drink that costs EXACTLY NT$40.", check: (items) => items.length === 1 && getTotal(items) === 40 },
+        { id: 5, title: "Challenge 5", desc: "Choose TWO DIFFERENT drinks. Total must be less than NT$100.", check: (items) => items.length === 2 && items.every(i => i.qty === 1) && getTotal(items) < 100 }
+    ];
+
+    function getTotal(items) {
+        return items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    }
+
+    // INITIALIZATION
+    window.onload = () => {
+        renderMenu();
+        updateCartDisplay();
+    };
+
+    // SPEECH SYNTHESIS
+    function speakText(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // Stop ongoing speech
+            const cleanText = text.replace(/["']/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.rate = 0.85; // Slightly slower for ESL learners
+            utterance.lang = 'en-US';
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // RENDER MAIN MENU
+    function renderMenu() {
+        const container = document.getElementById('menu-container');
+        container.innerHTML = '';
+
+        drinks.forEach(drink => {
+            const card = document.createElement('div');
+            card.className = 'drink-card';
+            card.id = `card-${drink.id}`;
+            card.innerHTML = `
+                <div class="toast-added" id="toast-${drink.id}">✓ Added!</div>
+                <div class="img-container">
+                    <img class="drink-img" src="${drink.img}" alt="${drink.name}" onerror="handleImgError(this, '${drink.emoji}')">
+                    <div class="emoji-fallback">${drink.emoji}</div>
+                </div>
+                <div>
+                    <div class="drink-title-row">
+                        <span class="drink-name">${drink.name}</span>
+                        <button class="speaker-btn" onclick="speakText('${drink.name}')">🔊</button>
+                    </div>
+                    <div class="drink-price">NT$${drink.price}</div>
+                </div>
+                <button class="btn-add" onclick="addToCart('${drink.id}')">＋ ADD</button>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function handleImgError(img, emoji) {
+        img.style.display = 'none';
+        img.nextElementSibling.style.display = 'block';
+    }
+
+    // CART LOGIC
+    function addToCart(drinkId) {
+        const drink = drinks.find(d => d.id === drinkId);
+        const existing = cart.find(item => item.id === drinkId);
+
+        if (existing) {
+            existing.qty++;
+        } else {
+            cart.push({ ...drink, qty: 1 });
+        }
+
+        // Trigger Animations & Feedback
+        const card = document.getElementById(`card-${drinkId}`);
+        const toast = document.getElementById(`toast-${drinkId}`);
+        
+        card.classList.add('added-anim');
+        toast.style.display = 'block';
+
+        setTimeout(() => {
+            card.classList.remove('added-anim');
+            toast.style.display = 'none';
+        }, 800);
+
+        updateCartDisplay();
+        updateESLPractice(drink);
+    }
+
+    function updateQuantity(drinkId, delta) {
+        const item = cart.find(i => i.id === drinkId);
+        if (item) {
+            item.qty += delta;
+            if (item.qty <= 0) {
+                removeFromCart(drinkId);
+            } else {
+                updateCartDisplay();
+            }
+        }
+    }
+
+    function removeFromCart(drinkId) {
+        cart = cart.filter(item => item.id !== drinkId);
+        updateCartDisplay();
+    }
+
+    function clearCart() {
+        cart = [];
+        updateCartDisplay();
+        resetESLPractice();
+    }
+
+    function updateCartDisplay() {
+        const cartContainer = document.getElementById('cart-items');
+        cartContainer.innerHTML = '';
+
+        if (cart.length === 0) {
+            cartContainer.innerHTML = '<div style="text-align:center; color:#999; margin-top:30px;">Your cart is empty.</div>';
+        } else {
+            cart.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'cart-item';
+                el.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.name}</div>
+                        <div class="cart-item-price">NT$${item.price} × ${item.qty}</div>
+                    </div>
+                    <div class="cart-controls">
+                        <button class="btn-qty" onclick="updateQuantity('${item.id}', -1)">−</button>
+                        <span style="font-weight:bold;">${item.qty}</span>
+                        <button class="btn-qty" onclick="updateQuantity('${item.id}', 1)">＋</button>
+                        <button class="btn-del" onclick="removeFromCart('${item.id}')">🗑</button>
+                    </div>
+                `;
+                cartContainer.appendChild(el);
+            });
+        }
+
+        const total = getTotal(cart);
+        document.getElementById('cart-total').innerText = `NT$${total}`;
+    }
+
+    // ESL PRACTICE UPDATES
+    function updateESLPractice(drink) {
+        const article = ['a', 'e', 'i', 'o', 'u'].includes(drink.name[0].toLowerCase()) ? 'an' : 'a';
+        const nameFormatted = drink.name.toLowerCase();
+        
+        document.getElementById('practice-want').innerText = `"I'd like ${article} ${nameFormatted}, please."`;
+        document.getElementById('practice-price').innerText = `"It's NT$${drink.price}."`;
+    }
+
+    function resetESLPractice() {
+        document.getElementById('practice-want').innerText = `"I'd like a drink, please."`;
+        document.getElementById('practice-price').innerText = `"It's NT$0."`;
+    }
+
+    // CHECKOUT FLOW
+    function checkout() {
+        if (cart.length === 0) {
+            alert("Please add at least one drink to your cart!");
+            return;
+        }
+
+        document.getElementById('shop-screen').style.display = 'none';
+        document.getElementById('challenge-screen').style.display = 'none';
+        document.getElementById('checkout-screen').style.display = 'block';
+
+        // Render Receipt Summary
+        const receipt = document.getElementById('receipt-summary');
+        let html = '<div style="font-weight:bold; margin-bottom:10px;">YOUR ORDER:</div>';
+        cart.forEach(i => {
+            html += `<div style="display:flex; justify-space-between; margin-bottom:5px;">
+                <span>${i.name} × ${i.qty}</span>
+                <span>NT$${i.price * i.qty}</span>
+            </div>`;
+        });
+        html += `<hr style="margin:10px 0; border:none; border-top:1px dashed #CCC;">
+                 <div style="display:flex; justify-space-between; font-weight:bold; font-size:1.2rem; color:var(--primary);">
+                    <span>TOTAL:</span>
+                    <span>NT$${getTotal(cart)}</span>
+                 </div>`;
+        receipt.innerHTML = html;
+
+        // Start Cup Fill Animation
+        const liquid = document.getElementById('cup-liquid');
+        const sparkles = document.getElementById('sparkles');
+        const statusText = document.getElementById('prep-status-text');
+        const newOrderBtn = document.getElementById('new-order-btn');
+
+        liquid.style.height = '0%';
+        sparkles.style.display = 'none';
+        statusText.innerText = "🥤 Your drink is being prepared!";
+        newOrderBtn.style.display = 'none';
+
+        setTimeout(() => { liquid.style.height = '85%'; }, 100);
+
+        setTimeout(() => {
+            statusText.innerText = "🎉 Thank you for your order!";
+            sparkles.style.display = 'block';
+            newOrderBtn.style.display = 'block';
+            speakText("Thank you for your order! Your drink is ready.");
+        }, 2600);
+    }
+
+    // NAVIGATION
+    function showHomeScreen() {
+        clearCart();
+        document.getElementById('shop-screen').style.display = 'grid';
+        document.getElementById('challenge-screen').style.display = 'none';
+        document.getElementById('checkout-screen').style.display = 'none';
+    }
+
+    // CHALLENGE MODE SYSTEM
+    function startChallengeMode() {
+        currentChallengeIdx = 0;
+        document.getElementById('shop-screen').style.display = 'none';
+        document.getElementById('checkout-screen').style.display = 'none';
+        document.getElementById('challenge-screen').style.display = 'block';
+        loadChallenge();
+    }
+
+    function loadChallenge() {
+        challengeCart = [];
+        const c = challenges[currentChallengeIdx];
+        document.getElementById('challenge-title').innerText = c.title;
+        document.getElementById('challenge-desc').innerText = c.desc;
+        document.getElementById('challenge-status').innerText = '';
+        document.getElementById('challenge-status').className = 'status-msg';
+        document.getElementById('next-challenge-btn').style.display = 'none';
+
+        updateChallengeUI();
+        renderChallengeMenu();
+    }
+
+    function renderChallengeMenu() {
+        const container = document.getElementById('challenge-menu');
+        container.innerHTML = '';
+
+        drinks.forEach(drink => {
+            const card = document.createElement('div');
+            card.className = 'drink-card';
+            card.innerHTML = `
+                <div class="img-container">
+                    <img class="drink-img" src="${drink.img}" alt="${drink.name}" onerror="handleImgError(this, '${drink.emoji}')">
+                    <div class="emoji-fallback">${drink.emoji}</div>
+                </div>
+                <div>
+                    <div class="drink-title-row">
+                        <span class="drink-name">${drink.name}</span>
+                    </div>
+                    <div class="drink-price">NT$${drink.price}</div>
+                </div>
+                <button class="btn-add" onclick="addChallengeDrink('${drink.id}')">SELECT</button>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function addChallengeDrink(drinkId) {
+        const drink = drinks.find(d => d.id === drinkId);
+        const existing = challengeCart.find(i => i.id === drinkId);
+
+        if (existing) {
+            existing.qty++;
+        } else {
+            challengeCart.push({ ...drink, qty: 1 });
+        }
+
+        updateChallengeUI();
+        evaluateChallenge();
+    }
+
+    function resetChallengeSelection() {
+        challengeCart = [];
+        document.getElementById('challenge-status').innerText = '';
+        document.getElementById('challenge-status').className = 'status-msg';
+        document.getElementById('next-challenge-btn').style.display = 'none';
+        updateChallengeUI();
+    }
+
+    function updateChallengeUI() {
+        const totalQty = challengeCart.reduce((a,b) => a + b.qty, 0);
+        document.getElementById('challenge-selected-count').innerText = totalQty;
+        document.getElementById('challenge-total').innerText = `NT$${getTotal(challengeCart)}`;
+    }
+
+    function evaluateChallenge() {
+        const c = challenges[currentChallengeIdx];
+        const statusEl = document.getElementById('challenge-status');
+        const nextBtn = document.getElementById('next-challenge-btn');
+
+        const total = getTotal(challengeCart);
+
+        // Check budget overruns for general checks
+        if ((currentChallengeIdx === 0 && total > 100) || 
+            (currentChallengeIdx === 1 && total > 100) || 
+            (currentChallengeIdx === 2 && total > 150) || 
+            (currentChallengeIdx === 4 && total >= 100)) {
+            statusEl.innerText = "❌ TOO EXPENSIVE! Try again!";
+            statusEl.className = "status-msg error";
+            nextBtn.style.display = 'none';
+            return;
+        }
+
+        if (c.check(challengeCart)) {
+            statusEl.innerText = "⭐ GREAT JOB!";
+            statusEl.className = "status-msg success";
+            speakText("Great job!");
+            nextBtn.style.display = 'inline-flex';
+        } else {
+            statusEl.innerText = "";
+            nextBtn.style.display = 'none';
+        }
+    }
+
+    function nextChallenge() {
+        currentChallengeIdx++;
+        if (currentChallengeIdx < challenges.length) {
+            loadChallenge();
+        } else {
+            alert("🎉 You completed all the challenges! Returning to main menu.");
+            showHomeScreen();
+        }
+    }
+</script>
+</body>
+</html>
